@@ -1,0 +1,61 @@
+Login & Signup
+
+
+Feature Description: Users can register and log in securely.
+
+
+Assigned Developer: Kelly Kla-Diihabh
+
+
+Tech Involvement: Frontend (React) and Backend (Node.js/Express)
+
+
+Expense Tracking
+
+
+Feature Description: Add, edit, view, and delete expenses.
+
+
+Assigned Developer: Kelly Kla-Diihabh
+
+
+Tech Involvement: Frontend (React) and Backend (Node.js/Express)
+
+
+Budget Management
+
+
+Feature Description: Set and view monthly budgets.
+
+
+Assigned Developer: Kim 
+
+
+Tech Involvement: Frontend (React) and Backend (Node.js/Express)
+
+
+Dashboard View
+
+
+Feature Description: Visual overview of spending with filters.
+
+
+Assigned Developer: Kim 
+
+
+Tech Involvement: Frontend (React) and Backend (Node.js/Express)
+
+
+About Page
+
+
+Feature Description: Displays team info and course details.
+
+
+Assigned Developer: Kim 
+
+
+Tech Involvement: Frontend (React)
+
+
+
