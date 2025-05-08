@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
         const res = await axios.get('http://localhost:5000/api/auth/me', { withCredentials: true });
         setUser(res.data.user || null);
       } catch (err) {
-        console.error('Auth check failed:', err.message);
+        console.error('Auth check failed:', err.response?.data?.error || err.message);
         setUser(null);
       } finally {
         setLoading(false);
@@ -34,8 +34,11 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user || null);
       return res.data;
     } catch (err) {
-      console.error('Login failed:', err.message);
-      throw new Error('Login failed');
+      const errorMessage = err.response
+        ? `Login failed (Status ${err.response.status}): ${err.response.data?.error || err.message}`
+        : `Login failed: ${err.message}`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -45,8 +48,11 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user || null);
       return res.data;
     } catch (err) {
-      console.error('Registration failed:', err.message);
-      throw new Error('Registration failed');
+      const errorMessage = err.response
+        ? `Registration failed (Status ${err.response.status}): ${err.response.data?.error || err.message}`
+        : `Registration failed: ${err.message}`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

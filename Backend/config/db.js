@@ -3,7 +3,7 @@ require('dotenv').config();
 const connectDB = async () => {
   try {
     mongoose.set('strictQuery', false); 
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose.connect(process.env.MONGODB_URI|| 'mongodb://localhost:27017/budget-tracker', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
