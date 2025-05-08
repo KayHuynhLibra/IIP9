@@ -1,0 +1,2 @@
+node_modules .env build dist public/tailwind.css
+node_modules
