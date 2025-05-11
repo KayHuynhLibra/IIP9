@@ -7,14 +7,15 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/budget-tracker
-      - JWT_SECRET=your_jwt_secret
+      - MONGODB_URI=mongodb+srv://ip9budgettracker:Kimsang2910@stepkay.itavcpy.mongodb.net/budgetDB?retryWrites=true&w=majority&appName=StepKay
+      - JWT_SECRET=JWT_SECRET=6983NDQD0DNASAOJL1asa24fdadsdasd
+
       - NODE_ENV=development
     volumes:
       - ./Backend:/app
       - /app/node_modules
     depends_on:
-      - mongodb
+      - mongo
   frontend:
     build:
       context: ./Frontend
