@@ -1,12 +1,844 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-device-width, initial-scale=1" />
-    <title>Budget Tracker</title>
-    <link rel="stylesheet" href="/tailwind.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Budget Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-router-dom@6.3.0/dist/umd/react-router-dom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@7/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { BrowserRouter, Routes, Route, Link, useNavigate } = ReactRouterDOM;
+
+    // Helper: API Client
+    const apiClient = axios.create({
+      baseURL: 'http://localhost:5000/api',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Component: Transaction Form
+    const TransactionForm = ({ onAddTransaction }) => {
+      const [formData, setFormData] = useState({
+        amount: '',
+        type: 'deposit',
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+      });
+      const [error, setError] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.amount || !formData.description) {
+          setError('Please fill in all required fields');
+          return;
+        }
+        const newTransaction = {
+          amount: parseFloat(formData.amount),
+          type: formData.type,
+          date: formData.date,
+          description: formData.description,
+        };
+        onAddTransaction(newTransaction);
+        setFormData({ amount: '', type: 'deposit', date: new Date().toISOString().split('T')[0], description: '' });
+        setError('');
+      };
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-lg font-semibold mb-4">Add New Transaction</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <input
+                type="text"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter description"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Amount</label>
+              <input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter amount"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="deposit">Deposit</option>
+                <option value="withdrawal">Withdrawal</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                required
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSubmit}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Add Transaction
+          </button>
+        </div>
+      );
+    };
+
+    // Component: Budget Form
+    const BudgetForm = ({ onAddBudget }) => {
+      const [budgetForm, setBudgetForm] = useState({
+        category: '',
+        amount: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+      });
+      const [error, setError] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!budgetForm.category || !budgetForm.amount || !budgetForm.endDate) {
+          setError('Please fill in all required fields');
+          return;
+        }
+        const newBudget = {
+          category: budgetForm.category,
+          amount: parseFloat(budgetForm.amount),
+          startDate: budgetForm.startDate,
+          endDate: budgetForm.endDate,
+        };
+        onAddBudget(newBudget);
+        setBudgetForm({ category: '', amount: '', startDate: new Date().toISOString().split('T')[0], endDate: '' });
+        setError('');
+      };
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-lg font-semibold mb-4">Add New Budget</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <input
+                type="text"
+                value={budgetForm.category}
+                onChange={(e) => setBudgetForm({ ...budgetForm, category: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter category"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Amount</label>
+              <input
+                type="number"
+                value={budgetForm.amount}
+                onChange={(e) => setBudgetForm({ ...budgetForm, amount: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter amount"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Start Date</label>
+              <input
+                type="date"
+                value={budgetForm.startDate}
+                onChange={(e) => setBudgetForm({ ...budgetForm, startDate: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">End Date</label>
+              <input
+                type="date"
+                value={budgetForm.endDate}
+                onChange={(e) => setBudgetForm({ ...budgetForm, endDate: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                required
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSubmit}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Add Budget
+          </button>
+        </div>
+      );
+    };
+
+    // Component: Transaction List
+    const TransactionList = ({ transactions, page, limit, total, onPageChange }) => {
+      const totalPages = Math.ceil(total / limit);
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-lg font-semibold mb-4">Transactions</h2>
+          {transactions.length === 0 ? (
+            <p className="text-gray-500">No transactions found for this period.</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {transactions.map(tx => (
+                      <tr key={tx._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tx._id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tx.description || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${tx.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tx.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(tx.date).toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${tx.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            {tx.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 flex justify-between">
+                <button
+                  onClick={() => onPageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Previous
+                </button>
+                <span>Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => onPageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    };
+
+    // Component: Budget List
+    const BudgetList = ({ budgets, page, limit, total, onPageChange }) => {
+      const totalPages = Math.ceil(total / limit);
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-lg font-semibold mb-4">Budgets</h2>
+          {budgets.length === 0 ? (
+            <p className="text-gray-500">No budgets found for this period.</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {budgets.map(budget => (
+                      <tr key={budget._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{budget.category}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${budget.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${budget.spent.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(budget.startDate).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(budget.endDate).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 flex justify-between">
+                <button
+                  onClick={() => onPageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Previous
+                </button>
+                <span>Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => onPageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    };
+
+    // Component: Transaction Chart
+    const TransactionChart = ({ chartData }) => {
+      useEffect(() => {
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: chartData,
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true },
+            },
+          },
+        });
+      }, [chartData]);
+      return <canvas id="transactionChart"></canvas>;
+    };
+
+    // Component: Stat Cards
+    const StatCards = ({ totalBalance, totalTransactions }) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow flex items-center">
+          <div>
+            <p className="text-sm text-gray-500">Total Balance</p>
+            <p className="text-xl font-semibold text-gray-900">${totalBalance.toFixed(2)}</p>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow flex items-center">
+          <div>
+            <p className="text-sm text-gray-500">Total Transactions</p>
+            <p className="text-xl font-semibold text-gray-900">{totalTransactions}</p>
+          </div>
+        </div>
+      </div>
+    );
+
+    // Component: Login Form
+    const LoginForm = ({ onLogin }) => {
+      const [formData, setFormData] = useState({ email: '', password: '' });
+      const [error, setError] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.email || !formData.password) {
+          setError('Please fill in all fields');
+          return;
+        }
+        apiClient.post('/auth/login', formData)
+          .then(response => {
+            localStorage.setItem('token', response.data.token);
+            onLogin(response.data.user);
+          })
+          .catch(err => setError(err.response?.data?.error || 'Login failed'));
+      };
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow border-2 border-orange-500">
+          <h2 className="text-lg font-semibold mb-4">Login</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter email"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSubmit}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Login
+          </button>
+        </div>
+      );
+    };
+
+    // Component: Register Form
+    const RegisterForm = ({ onRegister }) => {
+      const [formData, setFormData] = useState({ email: '', password: '' });
+      const [error, setError] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.email || !formData.password) {
+          setError('Please fill in all fields');
+          return;
+        }
+        apiClient.post('/auth/register', formData)
+          .then(response => {
+            localStorage.setItem('token', response.data.token);
+            onRegister(response.data.user);
+          })
+          .catch(err => setError(err.response?.data?.error || 'Registration failed'));
+      };
+
+      return (
+        <div className="bg-white p-6 rounded-lg shadow border-2 border-orange-500">
+          <h2 className="text-lg font-semibold mb-4">Register</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter email"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSubmit}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Register
+          </button>
+        </div>
+      );
+    };
+
+    // Page: Dashboard
+    const Dashboard = ({ user }) => {
+      const [activeTab, setActiveTab] = useState('daily');
+      const [transactions, setTransactions] = useState([]);
+      const [chartData, setChartData] = useState({
+        labels: [],
+        datasets: [{ label: 'Transaction Amount', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true }],
+      });
+      const [page, setPage] = useState(1);
+      const [limit] = useState(10);
+      const [total, setTotal] = useState(0);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        if (!user) return;
+        apiClient.get('/transactions', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          params: { range: activeTab, page, limit },
+        })
+          .then(response => {
+            setTransactions(response.data.transactions || []);
+            setTotal(response.data.total || 0);
+            const labels = response.data.transactions.map(tx => new Date(tx.date).toLocaleDateString());
+            const data = response.data.transactions.map(tx => tx.amount);
+            setChartData({
+              labels,
+              datasets: [{ label: 'Transaction Amount', data, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true }],
+            });
+            setError('');
+          })
+          .catch(err => {
+            setError(err.response?.data?.error || 'Failed to load transactions');
+            setTransactions([]);
+            setTotal(0);
+          });
+      }, [activeTab, page, user]);
+
+      const handleAddTransaction = (newTransaction) => {
+        apiClient.post('/transactions', newTransaction, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+          .then(response => {
+            setTransactions([response.data, ...transactions]);
+            setTotal(total + 1);
+          })
+          .catch(err => setError(err.response?.data?.error || 'Failed to add transaction'));
+      };
+
+      const totalBalance = transactions.reduce((sum, tx) => sum + (tx.type === 'deposit' ? tx.amount : -tx.amount), 0);
+      const totalTransactions = total;
+
+      return (
+        <div className="min-h-screen bg-[#f6e7d3]">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
+          <p className="text-gray-600 mb-6">Welcome, {user?.email}! Manage your finances with ease.</p>
+
+          <TransactionForm onAddTransaction={handleAddTransaction} />
+
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {['daily', 'weekly', 'monthly', 'yearly'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setPage(1); }}
+                    className={`${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+
+          <StatCards totalBalance={totalBalance} totalTransactions={totalTransactions} />
+
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-lg font-semibold mb-4">Transaction Trends</h2>
+            {transactions.length === 0 ? (
+              <p className="text-gray-500">No data to display chart.</p>
+            ) : (
+              <TransactionChart chartData={chartData} />
+            )}
+          </div>
+
+          <TransactionList
+            transactions={transactions}
+            page={page}
+            limit={limit}
+            total={total}
+            onPageChange={setPage}
+          />
+        </div>
+      );
+    };
+
+    // Page: Transactions
+    const Transactions = ({ user }) => {
+      const [activeTab, setActiveTab] = useState('daily');
+      const [transactions, setTransactions] = useState([]);
+      const [page, setPage] = useState(1);
+      const [limit] = useState(10);
+      const [total, setTotal] = useState(0);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        if (!user) return;
+        apiClient.get('/transactions', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          params: { range: activeTab, page, limit },
+        })
+          .then(response => {
+            setTransactions(response.data.transactions || []);
+            setTotal(response.data.total || 0);
+            setError('');
+          })
+          .catch(err => {
+            setError(err.response?.data?.error || 'Failed to load transactions');
+            setTransactions([]);
+            setTotal(0);
+          });
+      }, [activeTab, page, user]);
+
+      const handleAddTransaction = (newTransaction) => {
+        apiClient.post('/transactions', newTransaction, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+          .then(response => {
+            setTransactions([response.data, ...transactions]);
+            setTotal(total + 1);
+          })
+          .catch(err => setError(err.response?.data?.error || 'Failed to add transaction'));
+      };
+
+      return (
+        <div className="min-h-screen bg-[#f6e7d3]">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Transactions</h1>
+
+          <TransactionForm onAddTransaction={handleAddTransaction} />
+
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {['daily', 'weekly', 'monthly', 'yearly'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setPage(1); }}
+                    className={`${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+
+          <TransactionList
+            transactions={transactions}
+            page={page}
+            limit={limit}
+            total={total}
+            onPageChange={setPage}
+          />
+        </div>
+      );
+    };
+
+    // Page: Budget Goals
+    const BudgetGoals = ({ user }) => {
+      const [activeTab, setActiveTab] = useState('daily');
+      const [budgets, setBudgets] = useState([]);
+      const [page, setPage] = useState(1);
+      const [limit] = useState(10);
+      const [total, setTotal] = useState(0);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        if (!user) return;
+        apiClient.get('/budgets', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          params: { range: activeTab, page, limit },
+        })
+          .then(response => {
+            setBudgets(response.data.budgets || []);
+            setTotal(response.data.total || 0);
+            setError('');
+          })
+          .catch(err => {
+            setError(err.response?.data?.error || 'Failed to load budgets');
+            setBudgets([]);
+            setTotal(0);
+          });
+      }, [activeTab, page, user]);
+
+      const handleAddBudget = (newBudget) => {
+        apiClient.post('/budgets', newBudget, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+          .then(response => {
+            setBudgets([response.data, ...budgets]);
+            setTotal(total + 1);
+          })
+          .catch(err => setError(err.response?.data?.error || 'Failed to add budget'));
+      };
+
+      if (!user) {
+        return (
+          <div className="bg-white p-6 rounded-lg shadow border-2 border-orange-500">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Budget Goals</h1>
+            <p className="text-gray-600">Please log in to manage your budget goals.</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-[#f6e7d3]">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Budget Goals</h1>
+
+          <BudgetForm onAddBudget={handleAddBudget} />
+
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {['daily', 'weekly', 'monthly', 'yearly'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setPage(1); }}
+                    className={`${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+
+          <BudgetList
+            budgets={budgets}
+            page={page}
+            limit={limit}
+            total={total}
+            onPageChange={setPage}
+          />
+        </div>
+      );
+    };
+
+    // Page: Login
+    const Login = ({ onLogin }) => {
+      return (
+        <div className="min-h-screen bg-[#f6e7d3]">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Login</h1>
+          <LoginForm onLogin={onLogin} />
+        </div>
+      );
+    };
+
+    // Page: Register
+    const Register = ({ onRegister }) => {
+      return (
+        <div className="min-h-screen bg-[#f6e7d3]">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Register</h1>
+          <RegisterForm onRegister={onRegister} />
+        </div>
+      );
+    };
+
+    // App Component with Navigation
+    const App = () => {
+      const navigate = useNavigate();
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          apiClient.get('/users/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then(response => {
+              setUser(response.data);
+              setLoading(false);
+            })
+            .catch(() => {
+              localStorage.removeItem('token');
+              setLoading(false);
+              navigate('/login');
+            });
+        } else {
+          setLoading(false);
+          navigate('/login');
+        }
+      }, []);
+
+      const handleLogin = (userData) => {
+        setUser(userData);
+        navigate('/');
+      };
+
+      const handleRegister = (userData) => {
+        setUser(userData);
+        navigate('/');
+      };
+
+      const handleLogout = () => {
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+      };
+
+      if (loading) return <div>Loading...</div>;
+
+      return (
+        <div className="font-sans">
+          <nav className="bg-blue-600 text-white shadow">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+              <div className="space-x-4">
+                <Link to="/" className="text-white font-semibold hover:text-blue-200">Dashboard</Link>
+                <Link to="/transactions" className="text-white hover:text-blue-200">Transactions</Link>
+                <Link to="/budget-goals" className="text-white hover:text-blue-200">Budget Goals</Link>
+              </div>
+              <div className="space-x-4">
+                {user ? (
+                  <button onClick={handleLogout} className="text-white hover:text-blue-200">Logout</button>
+                ) : (
+                  <>
+                    <Link to="/login" className="text-white hover:text-blue-200">Login</Link>
+                    <Link to="/register" className="text-white hover:text-blue-200">Register</Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </nav>
+
+          <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <Routes>
+              <Route path="/" element={<Dashboard user={user} />} />
+              <Route path="/transactions" element={<Transactions user={user} />} />
+              <Route path="/budget-goals" element={<BudgetGoals user={user} />} />
+              <Route path="/login" element={<Login onLogin={handleLogin} />} />
+              <Route path="/register" element={<Register onRegister={handleRegister} />} />
+            </Routes>
+          </main>
+        </div>
+      );
+    };
+
+    // Render App with Router
+    ReactDOM.render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>,
+      document.getElementById('root')
+    );
+  </script>
+</body>
 </html>

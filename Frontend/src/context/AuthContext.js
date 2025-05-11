@@ -1,79 +1,143 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-export const AuthContext = createContext({
-  user: null,
-  loading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {}
-});
+// Configure axios defaults
+axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-export const AuthProvider = ({ children }) => {
+// Add request interceptor for logging
+axios.interceptors.request.use(
+  (config) => {
+    console.log('Making request to:', config.url);
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for logging
+axios.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', response.status);
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+
+export const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const res = await axios.get('http://localhost:5000/api/auth/me', { withCredentials: true });
-        setUser(res.data.user || null);
-      } catch (err) {
-        console.error('Auth check failed:', err.response?.data?.error || err.message);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkUser();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      const response = await axios.get('/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUser(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Auth check error:', err);
+      setUser(null);
+      localStorage.removeItem('token');
+      setError(err.response?.data?.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', { email, password }, { withCredentials: true });
-      setUser(res.data.user || null);
-      return res.data;
+      setError(null);
+      const response = await axios.post('/api/users/login', { email, password });
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      return response.data;
     } catch (err) {
-      const errorMessage = err.response
-        ? `Login failed (Status ${err.response.status}): ${err.response.data?.error || err.message}`
-        : `Login failed: ${err.message}`;
-      console.error(errorMessage);
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      setError(errorMessage);
       throw new Error(errorMessage);
     }
   };
 
-  const register = async (email, password) => {
+  const register = async (name, email, password) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', { email, password }, { withCredentials: true });
-      setUser(res.data.user || null);
-      return res.data;
+      setError(null);
+      console.log('Attempting registration with:', { name, email });
+      const response = await axios.post('/api/users/register', { name, email, password });
+      console.log('Registration response:', response.data);
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      return response.data;
     } catch (err) {
-      const errorMessage = err.response
-        ? `Registration failed (Status ${err.response.status}): ${err.response.data?.error || err.message}`
-        : `Registration failed: ${err.message}`;
-      console.error(errorMessage);
+      console.error('Registration error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+      const errorMessage = err.response?.data?.message || 'Registration failed';
+      setError(errorMessage);
       throw new Error(errorMessage);
     }
   };
 
-  const logout = async () => {
-    try {
-      await axios.post('http://localhost:5000/api/auth/logout', {}, { withCredentials: true });
-      setUser(null);
-    } catch (err) {
-      console.error('Logout failed:', err.message);
-    }
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    setError(null);
   };
 
-  if (loading) {
-    return <div className="text-center p-4">Loading...</div>;
-  }
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+    checkAuth
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
 
 export default AuthProvider;

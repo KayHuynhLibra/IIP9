@@ -1,29 +1,38 @@
-import React from 'react';
-import useAuth from '../hooks/useAuth';
+import { useState } from 'react';
+import { useTransactions } from '../hooks/useTransactions';
+import TransactionForm from '../components/TransactionForm';
+import TransactionList from '../components/TransactionList';
+import SearchBar from '../components/SearchBar';
 
-const Transactions = () => {
-  const { user } = useAuth();
+function Transactions() {
+  const { transactions, loading, error } = useTransactions();
+  const [showForm, setShowForm] = useState(false);
+  const [searchParams, setSearchParams] = useState({ searchTerm: '', type: '' });
+
+  const filteredTransactions = transactions.filter(t => {
+    const { searchTerm, type } = searchParams;
+    const matchesSearch = !searchTerm || (typeof searchTerm === 'string' && t.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesType = !type || t.type === type;
+    return matchesSearch && matchesType;
+  });
+
+  if (loading) return <div className="text-center">Loading...</div>;
+  if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
-    <div className="p-6 bg-green-100 min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8 border-4 border-green-500 transition-all duration-300 hover:shadow-xl">
-        <h2 className="text-3xl font-bold text-green-700 mb-6 text-center">Transactions</h2>
-        {user ? (
-          <div className="text-center">
-            <p className="text-xl text-gray-800 mb-4">Here are your transactions, <span className="font-semibold text-green-600">{user.email}</span>.</p>
-            <div className="mt-6">
-              <div className="bg-green-50 p-4 rounded-lg shadow-inner">
-                <p className="text-lg text-green-800">Transaction List Coming Soon!</p>
-                <p className="text-gray-600">Track your expenses and income here.</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-center text-lg text-gray-600">Please log in to view your transactions.</p>
-        )}
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Transactions</h1>
       </div>
+      <div className="mb-4">
+        <SearchBar onSearch={setSearchParams} />
+      </div>
+      {showForm && (
+        <TransactionForm onClose={() => setShowForm(false)} onSuccess={() => setShowForm(false)} />
+      )}
+      <TransactionList transactions={filteredTransactions} />
     </div>
   );
-};
+}
 
 export default Transactions;

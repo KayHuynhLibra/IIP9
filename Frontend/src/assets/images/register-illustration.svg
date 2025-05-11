@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Background -->
+        <rect fill="#F3F4F6" x="0" y="0" width="800" height="600"/>
+        
+        <!-- Form Elements -->
+        <rect x="200" y="150" width="400" height="300" rx="20" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="2"/>
+        
+        <!-- Form Fields -->
+        <rect x="250" y="200" width="300" height="40" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+        <rect x="250" y="260" width="300" height="40" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+        <rect x="250" y="320" width="300" height="40" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+        
+        <!-- Submit Button -->
+        <rect x="300" y="380" width="200" height="40" rx="8" fill="#3B82F6"/>
+        <text x="400" y="405" font-family="Arial" font-size="16" fill="white" text-anchor="middle">Create Account</text>
+        
+        <!-- Decorative Elements -->
+        <circle cx="150" cy="150" r="30" fill="#EFF6FF" opacity="0.5"/>
+        <circle cx="650" cy="450" r="40" fill="#EFF6FF" opacity="0.5"/>
+        <circle cx="700" cy="150" r="25" fill="#EFF6FF" opacity="0.5"/>
+        
+        <!-- Welcome Text -->
+        <text x="400" y="100" font-family="Arial" font-size="24" fill="#1F2937" text-anchor="middle">Welcome!</text>
+        <text x="400" y="130" font-family="Arial" font-size="16" fill="#6B7280" text-anchor="middle">Join our community</text>
+    </g>
+</svg> 

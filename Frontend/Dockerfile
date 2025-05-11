@@ -1,7 +1,14 @@
 FROM node:16
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+# Copy all files first
 COPY . .
+
+# Install dependencies
+RUN npm install
+
+# Build Tailwind CSS
+RUN npm run tailwind:build
+
 EXPOSE 3000
 CMD ["npm", "start"]

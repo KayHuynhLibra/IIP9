@@ -1,6 +1,6 @@
-const Budget = require('../models/Budget');
+import Budget from '../models/Budget.js';
 
-exports.checkBudget = async (req, res, next) => {
+const checkBudget = async (req, res, next) => {
   const { category, amount } = req.body;
   try {
     const budget = await Budget.findOne({ userId: req.userId, category });
@@ -14,3 +14,5 @@ exports.checkBudget = async (req, res, next) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+export default checkBudget; 
