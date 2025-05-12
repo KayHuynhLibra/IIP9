@@ -15,6 +15,8 @@ function TransactionForm({ onClose }) {
   const { budgets } = useBudgets();
   const [showWarning, setShowWarning] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
 
   const handleBudgetChange = (e) => {
     const selectedBudget = budgets.find(b => b._id === e.target.value);
@@ -131,19 +133,38 @@ function TransactionForm({ onClose }) {
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Category
-        </label>
-        <input
-          type="text"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          placeholder="Enter category name"
-          required
-        />
-      </div>
+    <div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Category
+  </label>
+  <select
+    value={formData.category}
+    onChange={(e) => {
+      const value = e.target.value;
+      setFormData({ ...formData, category: value });
+      setSelectedCategory(value);
+    }}
+    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+  >
+    <option value="Payroll">Payroll</option>
+    <option value="Rent">Rent</option>
+    <option value="Groceries">Groceries</option>
+    <option value="Utilities">Utilities</option>
+    <option value="Other">Other</option>
+  </select>
+
+  {selectedCategory === 'Other' && (
+    <input
+      type="text"
+      value={formData.category}
+      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      placeholder="Enter category name"
+      required
+    />
+  )}
+</div>
+
 
       <button
         type="submit"
