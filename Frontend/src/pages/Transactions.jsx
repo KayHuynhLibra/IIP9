@@ -3,6 +3,8 @@ import { useTransactions } from '../hooks/useTransactions';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import SearchBar from '../components/SearchBar';
+import { FaPlus } from "react-icons/fa";
+
 
 function Transactions() {
   const { transactions, loading, error } = useTransactions();
@@ -26,6 +28,8 @@ function Transactions() {
       </div>
       <div className="mb-4">
         <SearchBar onSearch={setSearchParams} />
+        <FaPlus onClick={() => setShowForm(true)}
+          onDoubleClick={() => {setShowForm(false)}}/>
       </div>
       {showForm && (
         <TransactionForm onClose={() => setShowForm(false)} onSuccess={() => setShowForm(false)} />
